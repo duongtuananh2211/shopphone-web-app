@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  php-fpm:
+    build:
+      context: .
+      dockerfile: php-fpm.dockerfile
+    volumes:
+    - ./:/var/www/app
+    networks:
+      - shopphone-app
+    container_name: shopphone-phpfpm
+    restart: unless-stopped
+    links:
+      - mysql:mysql
+
+  webservice:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+    - 8000:80
+    restart: unless-stopped
+    container_name: shopphone-webservice
+    volumes:
+    - ./:/var/www/app
+    networks:
+      - shopphone-app
+    depends_on:
+      - php-fpm
+    links:
+      - php-fpm:php-fpm
+
+  mysql:
+    image: mysql:5.7.22
+    container_name: shopphone-mysql
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ${DATA_PATH_HOST}/shopphone-data:/var/lib/mysql/
+    networks:
+      - shopphone-app
+
+
+networks:
+  shopphone-app:
+    driver: bridge
